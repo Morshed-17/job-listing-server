@@ -9,16 +9,15 @@ const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 // middleware
 const corsOptions = {
   origin: "http://localhost:5173", // frontend URI (ReactJS)
-  
 };
 app.use((req, res, next) => {
-    res.header('Access-Control-Allow-Origin', 'http://localhost:5173');
-    res.header('Access-Control-Allow-Credentials', 'true');
-    res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE');
-    res.header('Access-Control-Allow-Headers', 'Content-Type');
-    next();
-  });
-  
+  res.header("Access-Control-Allow-Origin", "http://localhost:5173");
+  res.header("Access-Control-Allow-Credentials", "true");
+  res.header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE");
+  res.header("Access-Control-Allow-Headers", "Content-Type");
+  next();
+});
+
 app.use(express.json());
 app.use(cors(corsOptions));
 
@@ -37,59 +36,60 @@ async function run() {
     // Connect the client to the server	(optional starting in v4.7)
     // await client.connect();
     // Send a ping to confirm a successful connection
-    
-    const jobsCollection = client.db('jobDB').collection('jobs')
-    
+
+    const jobsCollection = client.db("jobDB").collection("jobs");
 
     app.get("/jobs", async (req, res) => {
-      
       const cursor = jobsCollection.find();
       const result = await cursor.toArray();
       res.send(result);
-      
     });
-      
-    app.post('/jobs', async (req, res) => {
-        try{
-          const job = req.body
-          const result = await jobsCollection.insertOne(job)
 
-          res.send({message: 'job added'})
-        }
-        catch(err){
-          res.send(err)
-        }
-    })
+    app.post("/jobs", async (req, res) => {
+      try {
+        const job = req.body;
+        const result = await jobsCollection.insertOne(job);
+
+        res.send({ message: "job added" });
+      } catch (err) {
+        res.send(err);
+      }
+    });
+    //find job from view details
+    app.get("/job/:id", async (req, res) => {
+      try {
+        const id = req.params.id;
+        const query = { _id: new ObjectId(id) };
+        const result = await jobsCollection.findOne(query);
+        res.send(result);
+      } catch (err) {
+        res.send(err);
+      }
+    });
+    app.delete("/jobs/:id", async (req, res) => {
+      try {
+        
+        const id = req.params.id;
+        const query = { _id: new ObjectId(id) };
+        const result = await jobsCollection.deleteOne(query);
+        res.send(result);
+      } catch (err) {
+        res.send(err);
+      }
+    });
     // get my jobs
-    app.get('/my-jobs', async(req, res) => {
-      try{
-        let query = {}
-        if(req.query?.email){
-          query= {email: req.query.email}
+    app.get("/my-jobs", async (req, res) => {
+      try {
+        let query = {};
+        if (req.query?.email) {
+          query = { email: req.query.email };
         }
-        const result = await jobsCollection.find(query).toArray()
-        res.send(result)
+        const result = await jobsCollection.find(query).toArray();
+        res.send(result);
+      } catch (err) {
+        res.send(err);
       }
-      catch(err){
-        res.send(err)
-      }
-    })
-
-
-      //find job from view details
-      app.get('/job/:id', async( req, res) => {
-        
-        try{
-          const id = req.params.id
-        const query = {_id: new ObjectId(id)}
-        const result = await jobsCollection.findOne(query)
-        res.send(result)
-        }
-        catch(err){
-          res.send(err)
-        }
-        
-      })
+    });
 
     await client.db("admin").command({ ping: 1 });
     console.log(
