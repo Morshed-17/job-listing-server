@@ -4,7 +4,7 @@ const app = express();
 const cors = require("cors");
 require("dotenv").config();
 const port = process.env.port || 5001;
-const { MongoClient, ServerApiVersion } = require("mongodb");
+const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 
 // middleware
 const corsOptions = {
@@ -41,12 +41,37 @@ async function run() {
     const jobsCollection = client.db('jobDB').collection('jobs')
 
     app.get("/jobs", async (req, res) => {
+      
       const cursor = jobsCollection.find();
       const result = await cursor.toArray();
       res.send(result);
+      
     });
       
-
+    app.post('/jobs', async (req, res) => {
+        try{
+          const job = req.body
+          const result = await jobsCollection.insertOne(job)
+          res.send({message: 'job added'})
+        }
+        catch(err){
+          res.send(err)
+        }
+    })
+      //find job from view details
+      app.get('/job/:id', async( req, res) => {
+        
+        try{
+          const id = req.params.id
+        const query = {_id: new ObjectId(id)}
+        const result = await jobsCollection.findOne(query)
+        res.send(result)
+        }
+        catch(err){
+          res.send(err)
+        }
+        
+      })
 
     await client.db("admin").command({ ping: 1 });
     console.log(
