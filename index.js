@@ -39,6 +39,7 @@ async function run() {
     // Send a ping to confirm a successful connection
     
     const jobsCollection = client.db('jobDB').collection('jobs')
+    
 
     app.get("/jobs", async (req, res) => {
       
@@ -52,12 +53,29 @@ async function run() {
         try{
           const job = req.body
           const result = await jobsCollection.insertOne(job)
+
           res.send({message: 'job added'})
         }
         catch(err){
           res.send(err)
         }
     })
+    // get my jobs
+    app.get('/my-jobs', async(req, res) => {
+      try{
+        let query = {}
+        if(req.query?.email){
+          query= {email: req.query.email}
+        }
+        const result = await jobsCollection.find(query).toArray()
+        res.send(result)
+      }
+      catch(err){
+        res.send(err)
+      }
+    })
+
+
       //find job from view details
       app.get('/job/:id', async( req, res) => {
         
