@@ -3,14 +3,22 @@ const mongoose = require("mongoose");
 const app = express();
 const cors = require("cors");
 require("dotenv").config();
-const port = process.env.port || 5001
-const { MongoClient, ServerApiVersion } = require('mongodb');
-
+const port = process.env.port || 5001;
+const { MongoClient, ServerApiVersion } = require("mongodb");
 
 // middleware
 const corsOptions = {
-    origin: "http://localhost:3000" // frontend URI (ReactJS)
-}
+  origin: "http://localhost:5173", // frontend URI (ReactJS)
+  
+};
+app.use((req, res, next) => {
+    res.header('Access-Control-Allow-Origin', 'http://localhost:5173');
+    res.header('Access-Control-Allow-Credentials', 'true');
+    res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE');
+    res.header('Access-Control-Allow-Headers', 'Content-Type');
+    next();
+  });
+  
 app.use(express.json());
 app.use(cors(corsOptions));
 
@@ -22,23 +30,28 @@ const client = new MongoClient(uri, {
     version: ServerApiVersion.v1,
     strict: true,
     deprecationErrors: true,
-  }
+  },
 });
 async function run() {
   try {
     // Connect the client to the server	(optional starting in v4.7)
     // await client.connect();
     // Send a ping to confirm a successful connection
+    
+    const jobsCollection = client.db('jobDB').collection('jobs')
 
-
-
-
-
-
+    app.get("/jobs", async (req, res) => {
+      const cursor = jobsCollection.find();
+      const result = await cursor.toArray();
+      res.send(result);
+    });
+      
 
 
     await client.db("admin").command({ ping: 1 });
-    console.log("Pinged your deployment. You successfully connected to MongoDB!");
+    console.log(
+      "Pinged your deployment. You successfully connected to MongoDB!"
+    );
   } finally {
     // Ensures that the client will close when you finish/error
     // await client.close();
@@ -48,9 +61,9 @@ run().catch(console.dir);
 
 // route
 app.get("/", (req, res) => {
-    res.status(201).json({message: "Congress bro. backend is working"});
+  res.status(201).json({ message: "Congress bro. backend is working" });
 });
 
 app.listen(port, () => {
-    console.log(`Example app listening on port ${port}`)
-})
+  console.log(`Example app listening on port ${port}`);
+});
