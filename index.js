@@ -38,6 +38,23 @@ async function run() {
     // Send a ping to confirm a successful connection
 
     const jobsCollection = client.db("jobDB").collection("jobs");
+    const usersCollection = client.db("jobDB").collection("users");
+
+    app.put("/apply/:id", async (req, res) => {
+      try {
+        const body = req.body;
+        const id = req.params.id;
+        
+        const filter = { _id: new ObjectId(id) };
+        console.log(filter, id);
+        const option = { upsert: true };
+        const update = { $inc: { applicants_number: 1 } };
+        const result = await jobsCollection.updateOne(filter, update, option);
+        res.send(result);
+      } catch (err) {
+        res.send(err);
+      }
+    });
 
     app.get("/jobs", async (req, res) => {
       const cursor = jobsCollection.find();
@@ -55,30 +72,30 @@ async function run() {
         res.send(err);
       }
     });
+
     app.put("/jobs/:id", async (req, res) => {
-      try{
+      try {
         const id = req.params.id;
-      const filter = { _id: new ObjectId(id) };
-      const option = { upsert: true };
-      const updatedJob = req.body;
-      const job = {
-        $set: {
-          job_banner: updatedJob.job_banner,
-          job_title:updatedJob.job_title,
-          author_name: updatedJob.author_name,
-          job_category: updatedJob.job_category,
-          salary_range: updatedJob.salary_range,
-          job_description: updatedJob.job_description,
-          post_date: updatedJob.post_date,
-          deadline: updatedJob.deadline,
-          applicants_number: updatedJob.applicants_number,
-          email: updatedJob.email,
-        },
-        
-      };
-      const result = await jobsCollection.updateOne(filter, job, option)
-      res.send(result)
-      }catch(err){
+        const filter = { _id: new ObjectId(id) };
+        const option = { upsert: true };
+        const updatedJob = req.body;
+        const job = {
+          $set: {
+            job_banner: updatedJob.job_banner,
+            job_title: updatedJob.job_title,
+            author_name: updatedJob.author_name,
+            job_category: updatedJob.job_category,
+            salary_range: updatedJob.salary_range,
+            job_description: updatedJob.job_description,
+            post_date: updatedJob.post_date,
+            deadline: updatedJob.deadline,
+            applicants_number: updatedJob.applicants_number,
+            email: updatedJob.email,
+          },
+        };
+        const result = await jobsCollection.updateOne(filter, job, option);
+        res.send(result);
+      } catch (err) {
         console.log(err);
       }
     });
