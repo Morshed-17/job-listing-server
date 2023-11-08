@@ -55,6 +55,43 @@ async function run() {
         res.send(err);
       }
     });
+    app.put("/jobs/:id", async (req, res) => {
+      try{
+        const id = req.params.id;
+      const filter = { _id: new ObjectId(id) };
+      const option = { upsert: true };
+      const updatedJob = req.body;
+      const job = {
+        $set: {
+          job_banner: updatedJob.job_banner,
+          job_title:updatedJob.job_title,
+          author_name: updatedJob.author_name,
+          job_category: updatedJob.job_category,
+          salary_range: updatedJob.salary_range,
+          job_description: updatedJob.job_description,
+          post_date: updatedJob.post_date,
+          deadline: updatedJob.deadline,
+          applicants_number: updatedJob.applicants_number,
+          email: updatedJob.email,
+        },
+        
+      };
+      const result = await jobsCollection.updateOne(filter, job, option)
+      res.send(result)
+      }catch(err){
+        console.log(err);
+      }
+    });
+    app.get("/jobs/:id", async (req, res) => {
+      try {
+        const id = req.params.id;
+        const query = { _id: new ObjectId(id) };
+        const result = await jobsCollection.findOne(query);
+        res.send(result);
+      } catch (err) {
+        res.send(err);
+      }
+    });
     //find job from view details
     app.get("/job/:id", async (req, res) => {
       try {
@@ -68,7 +105,6 @@ async function run() {
     });
     app.delete("/jobs/:id", async (req, res) => {
       try {
-        
         const id = req.params.id;
         const query = { _id: new ObjectId(id) };
         const result = await jobsCollection.deleteOne(query);
