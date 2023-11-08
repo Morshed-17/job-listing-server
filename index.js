@@ -38,7 +38,21 @@ async function run() {
     // Send a ping to confirm a successful connection
 
     const jobsCollection = client.db("jobDB").collection("jobs");
-    const usersCollection = client.db("jobDB").collection("users");
+    const appliedCollection = client.db("jobDB").collection("appliedJobs");
+
+    app.get('/applied', async(req, res) => {
+      try{
+        let query = {};
+        if (req.query?.email) {
+          query = { email: req.query.email };
+        }
+        const result = await appliedCollection.find(query).toArray();
+        res.send(result);
+      }
+      catch(err){
+        res.send(err)
+      }
+    })
 
     app.put("/apply/:id", async (req, res) => {
       try {
@@ -46,7 +60,6 @@ async function run() {
         const id = req.params.id;
         
         const filter = { _id: new ObjectId(id) };
-        console.log(filter, id);
         const option = { upsert: true };
         const update = { $inc: { applicants_number: 1 } };
         const result = await jobsCollection.updateOne(filter, update, option);
@@ -55,6 +68,17 @@ async function run() {
         res.send(err);
       }
     });
+
+    app.post('/applied', async(req, res) => {
+      try {
+        const applied = req.body;
+        const result = await appliedCollection.insertOne(applied);
+
+        res.send({ message: "applied job added" });
+      } catch (err) {
+        res.send(err);
+      }
+    })
 
     app.get("/jobs", async (req, res) => {
       const cursor = jobsCollection.find();
