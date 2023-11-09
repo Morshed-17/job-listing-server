@@ -9,28 +9,23 @@ const port = process.env.port || 5001;
 const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 
 // middleware
-const corsOptions = {
-  origin: "http://localhost:5173",
-  credentials: true // frontend URI (ReactJS)
-};
+
 app.use(cookieParser());
 app.use(
   cors({
-    origin: ["http://localhost:5173", ],  //এখানে ক্লায়েন্ট সাইডের জন্যে ব্যবহার করা সকল লিংক বসাতে হবে।  
+    origin: ["http://localhost:5173",
+              "https://job-listing-9d84c.web.app/",
+              "https://job-listing-9d84c.firebaseapp.com/"
+  
+  ], //এখানে ক্লায়েন্ট সাইডের জন্যে ব্যবহার করা সকল লিংক বসাতে হবে।
     credentials: true, // it won't sent cookie to others origin if we don't set it.
   })
 );
 
-app.use((req, res, next) => {
-  res.header("Access-Control-Allow-Origin", "http://localhost:5173");
-  res.header("Access-Control-Allow-Credentials", "true");
-  res.header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE");
-  res.header("Access-Control-Allow-Headers", "Content-Type");
-  next();
-});
+
 app.use(cookieParser());
 app.use(express.json());
-app.use(cors(corsOptions));
+
 
 // mongodb
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASSWORD}@cluster0.b2w59kw.mongodb.net/?retryWrites=true&w=majority`;
@@ -46,19 +41,19 @@ const client = new MongoClient(uri, {
 // middlewares
 
 const verifyToken = (req, res, next) => {
-  const token = req?.cookies?.token
+  const token = req?.cookies?.token;
   // no token available
-  if(!token){
-    return res.status(401).send({message: 'Unautorized access'})
+  if (!token) {
+    return res.status(401).send({ message: "Unautorized access" });
   }
   jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, (err, decoded) => {
-      if(err){
-        return res.status(401).send({message: 'Unauthorized access'})
-      }
-      req.user = decoded
-      next()
-  } )
-}
+    if (err) {
+      return res.status(401).send({ message: "Unauthorized access" });
+    }
+    req.user = decoded;
+    next();
+  });
+};
 
 async function run() {
   try {
@@ -69,12 +64,11 @@ async function run() {
     const jobsCollection = client.db("jobDB").collection("jobs");
     const appliedCollection = client.db("jobDB").collection("appliedJobs");
 
-
-       // auth related api
-       app.post("/jwt", async (req, res) => {
-        try{
+    // auth related api
+    app.post("/jwt", async (req, res) => {
+      try {
         const user = req.body;
-        console.log("user for token", user);
+        // console.log("user for token", user);
         const token = jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, {
           expiresIn: "10h",
         });
@@ -85,16 +79,15 @@ async function run() {
             sameSite: "none",
           })
           .send({ success: true });
-        }
-        catch(err){
-          res.send(err)
-        }
-      });
+      } catch (err) {
+        res.send(err);
+      }
+    });
 
-    app.get('/applied',verifyToken, async(req, res) => {
-      try{
-        if(req.user?.email !== req.query?.email){
-          return res.status(403).send({message: 'forbidden access'})
+    app.get("/applied", verifyToken, async (req, res) => {
+      try {
+        if (req.user?.email !== req.query?.email) {
+          return res.status(403).send({ message: "forbidden access" });
         }
         let query = {};
         if (req.query?.email) {
@@ -102,20 +95,16 @@ async function run() {
         }
         const result = await appliedCollection.find(query).toArray();
         res.send(result);
+      } catch (err) {
+        res.send(err);
       }
-      catch(err){
-        res.send(err)
-      }
-    })
+    });
 
- 
-
-
-    app.put("/apply/:id",verifyToken, async (req, res) => {
+    app.put("/apply/:id", async (req, res) => {
       try {
         const body = req.body;
         const id = req.params.id;
-        
+
         const filter = { _id: new ObjectId(id) };
         const option = { upsert: true };
         const update = { $inc: { applicants_number: 1 } };
@@ -126,16 +115,30 @@ async function run() {
       }
     });
 
-    app.post('/applied', async(req, res) => {
+    app.post("/applied/:id", async (req, res) => {
       try {
+        const jobId = req.params.id    
         const applied = req.body;
-        const result = await appliedCollection.insertOne(applied);
 
-        res.send({ message: "applied job added" });
+        const result = await appliedCollection.findOne({
+          'email': applied.email,
+          'job._id': jobId
+        })
+        if(result){
+          console.log({message: 'Already applied'});
+          res.send({message: 'Already applied'})
+         
+        }else{
+          
+          const result = await appliedCollection.insertOne(applied);
+          res.send({ message: "Applied job " });
+          console.log('applied');
+        }
+        
       } catch (err) {
         res.send(err);
       }
-    })
+    });
 
     app.get("/jobs", async (req, res) => {
       const cursor = jobsCollection.find();
@@ -212,10 +215,10 @@ async function run() {
       }
     });
     // get my jobs
-    app.get("/my-jobs",verifyToken, async (req, res) => {
+    app.get("/my-jobs", verifyToken, async (req, res) => {
       try {
-        if(req.user?.email !== req.query?.email){
-          return res.status(403).send({message: 'forbidden access'})
+        if (req.user?.email !== req.query?.email) {
+          return res.status(403).send({ message: "forbidden access" });
         }
         let query = {};
         if (req.query?.email) {
@@ -225,6 +228,19 @@ async function run() {
         res.send(result);
       } catch (err) {
         res.send(err);
+      }
+    });
+    app.delete("/my-jobs/:id", async (req, res) => {
+      try {
+        const id = req.params.id;
+        const query = {
+          "job._id": new ObjectId(id),
+        };
+        const result = await appliedCollection.deleteMany(query);
+        console.log(result);
+        console.log(req.params.id);
+      } catch (err) {
+        console.log(err);
       }
     });
 
