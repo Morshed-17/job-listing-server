@@ -10,17 +10,18 @@ const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 
 // middleware
 
-app.use(cookieParser());
 app.use(
   cors({
     origin: ["http://localhost:5173",
+              "http://localhost:5173",
               "https://job-listing-9d84c.web.app/",
               "https://job-listing-9d84c.firebaseapp.com/"
   
   ], //এখানে ক্লায়েন্ট সাইডের জন্যে ব্যবহার করা সকল লিংক বসাতে হবে।
-    credentials: true, // it won't sent cookie to others origin if we don't set it.
+    // credentials: true, // it won't sent cookie to others origin if we don't set it.
   })
 );
+app.use(cookieParser());
 
 
 app.use(cookieParser());
